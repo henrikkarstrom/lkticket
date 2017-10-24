@@ -42,6 +42,18 @@ public class DeskOrders extends Request {
 		return status(200).entity(order).build();
 	}
 
+	@POST
+	@Path("/{id}/payments")
+	public Response createPayment(@PathParam("id") int id, string data) throws SQLException {
+		Order order = Order.getSingle(id);
+		assertNotNull(order, 404);
+		String paymentMethod = input.getString("paymentMethod");
+		int amount = input.getInt("amount");
+		Payment order.createPayment(paymentMethod, amount);
+
+		return status(200).entity(order).build();
+	}
+
 	@GET
 	@Path("/{id}/tickets")
 	public Response getTickets(@PathParam("id") int id) throws SQLException {
@@ -53,7 +65,10 @@ public class DeskOrders extends Request {
 
 	@POST
 	@Path("/{id}/tickets")
-	public Response addTickets(@PathParam("id") int id, String data) throws SQLException, JSONException {
+	public Response addTickets(@Context ContainerRequestContext context, @PathParam("id") int id, String data) throws SQLException, JSONException {
+
+		int userId = (Integer) context.getProperty("user_id");
+
 		JSONObject input = new JSONObject(data);
 		Order order = Order.getSingle(id);
 		assertNotNull(order, 404);
@@ -68,7 +83,7 @@ public class DeskOrders extends Request {
 			throw new BadRequestException();
 		}
 		int ticketCount = input.getInt("count");
-		List<Ticket> tickets = order.addTickets(perf.id, cat.id, rate.id, ticketCount);
+		List<Ticket> tickets = order.addTickets(userId, perf.id, cat.id, rate.id, ticketCount);
 		assertNotNull(tickets, 409);
 		return status(200).entity(tickets).build();
 	}

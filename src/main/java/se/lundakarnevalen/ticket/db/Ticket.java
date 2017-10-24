@@ -116,7 +116,7 @@ public class Ticket extends Entity {
 		return rs.next() ? Ticket.create(rs) : null;
 	}
 
-	public static Ticket create(Connection con, int order_id, int seat_id, int rate_id, int price) throws SQLException {
+	public static Ticket create(Connection con, int order_id, int seat_id, int rate_id, int price, int transactionId) throws SQLException {
 		String query = "INSERT INTO `tickets` SET `order_id`=?, `seat_id`=?, `rate_id`=?, `price`=?";
 		PreparedStatement stmt = con.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
 		stmt.setInt(1, order_id);
@@ -124,6 +124,35 @@ public class Ticket extends Entity {
 		stmt.setInt(3, rate_id);
 		stmt.setInt(4, price);
 		int id = executeInsert(stmt);
+		
+		//TODO Move to own method
+		query = "INSERT INTO ticket_transactions SET `ticket_id`=? ,`transaction_id`=?,`activity`=?";
+		stmt = con.prepareStatement(query);
+		stmt.setInt(1, id);
+		stmt.setInt(2, transactionId);
+		stmt.setInt(3, TicketTransactionActivity);
+		executeInsert(query);
+
 		return getSingle(con, id);
 	}
+	public static Ticket setAsPAid(Connection con, int transactionId) throws SQLException {
+		String query = "UPDATE INTO `tickets` SET `paid`=?, WHERE `id`=?";
+		PreparedStatement stmt = con.prepareStatement(query);
+		stmt.setBoolean(1, true;
+		stmt.setInt(2, id);
+		executeInsert(stmt);
+		
+		//TODO Move to own method
+		query = "INSERT INTO ticket_transactions SET `ticket_id`=? ,`transaction_id`=?,`activity`=?";
+		stmt = con.prepareStatement(query);
+		stmt.setInt(1, id);
+		stmt.setInt(2, transactionId);
+		stmt.setInt(3, TicketTransactionActivityPayment);
+		executeInsert(query);
+
+		return getSingle(con, id);
+	}
+
+	public const int TicketTransactionActivityReserveration = 1;
+	public const int TicketTransactionActivityPayment = 2;
 }

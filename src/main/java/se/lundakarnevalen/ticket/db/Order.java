@@ -50,6 +50,13 @@ public class Order extends Entity {
 		return new Mapper<Order>(getCon(), query).toEntityList(rs -> Order.create(rs));
 	}
 
+	public static List<Order> getForCustomer(int id) throws SQLException {
+		String query = "SELECT " + COLS + " FROM " + TABLE + " WHERE `customer_id`=?";
+		PreparedStatement stmt = prepare(query);
+		stmt.setLong(1, id);
+		return new Mapper<Order>(getCon(), query).toEntityList(rs -> Order.create(rs));
+	}
+
 	public static Order getSingle(long id) throws SQLException {
 		String query = "SELECT " + COLS + " FROM " + TABLE + " WHERE `id`=?";
 		PreparedStatement stmt = prepare(query);
@@ -67,13 +74,16 @@ public class Order extends Entity {
 		return getSingle(id);
 	}
 
-	public List<Ticket> addTickets(int performance_id, int category_id, int rate_id, int ticketCount)
+	public List<Ticket> addTickets(int user_id, int profile_id, int performance_id, int category_id, int rate_id, int ticketCount)
 			throws SQLException {
 		System.out.println("Reserving " + ticketCount + " tickets for perf=" + performance_id + ", cat=" + category_id
 				+ " and rate=" + rate_id);
 		Connection con = getCon();
 		try {
 			con.setAutoCommit(false);
+
+			int transactionId = Transaction.create(con, user_id, id, 0);
+
 			String query = "SELECT `id` FROM `seats` WHERE `active_ticket_id` IS NULL AND `category_id`=? AND `performance_id`=? LIMIT ? FOR UPDATE";
 			PreparedStatement stmt = con.prepareStatement(query);
 			stmt.setInt(1, category_id);
@@ -87,7 +97,7 @@ public class Order extends Entity {
 			int ticketsAvailable = 0;
 			while (rs.next()) {
 				int seat_id = rs.getInt("id");
-				Ticket ticket = Ticket.create(con, id, seat_id, rate_id, price.price);
+				Ticket ticket = Ticket.create(con, id, seat_id, rate_id, price.price, transactionId);
 				stmt = con.prepareStatement("UPDATE `seats` SET `active_ticket_id`=? WHERE `id`=?");
 				stmt.setInt(1, ticket.id);
 				stmt.setInt(2, seat_id);
